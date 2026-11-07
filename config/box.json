@@ -1,0 +1,23 @@
+{
+  "_comment": [
+    "LAB 'Polygon map': the simulator side of launch/box.launch.py start:=slanted (the default).",
+    "",
+    "  obstacles.circles  one round object, [x, y, r] in hall metres",
+    "  spawns             the start pose [x, y, theta_deg]: not on a grid heading, so no wall is at 0 or 90 deg",
+    "  passthrough false  the keys drive nothing: the robot stands where it was put",
+    "  gui_rate 10        the window draws 10 instead of 30 frames per second: the robot stands, old laptops",
+    "",
+    "config/box_straight.json is the same with heading 0: two walls are vertical, y = m x + t fails."
+  ],
+  "passthrough": false,
+  "gui_rate": 10,
+  "obstacles": {
+    "circles": [[6.5, 4.3, 0.8]]
+  },
+  "spawns": [[2.5, 2.0, 20.0]],
+  "view": {
+    "layers": {
+      "scan": true
+    }
+  }
+}

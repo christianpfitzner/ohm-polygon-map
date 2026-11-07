@@ -1,0 +1,8 @@
+[3] 360 points: 4 lines (k = 49 each), 22 points left over
+    wall 1: y =  -0.364 x + -1.595 ( -20.0 deg), 132 inliers
+    wall 2: y =   2.747 x +  5.846 (  70.0 deg), 103 inliers
+    wall 3: y =  -0.365 x +  4.791 ( -20.1 deg), 73 inliers
+    wall 4: y =   2.733 x + -20.371 (  69.9 deg), 30 inliers
+[4] 4 corners: (-2.392, -0.725), (6.062, -3.801), (8.121, 1.825), (-0.339, 4.915)
+    sides 8.996, 5.991, 9.006, 6.001 m, angles 90.0, 90.1, 90.0, 89.9 deg
+[5] circle centre (4.530, 0.787), r = 0.787 m, 20 of 22 points (k = 35)

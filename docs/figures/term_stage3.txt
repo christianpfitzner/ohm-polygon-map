@@ -1,0 +1,5 @@
+[3] 360 points: 4 lines (k = 49 each), 20 points left over
+    wall 1: y =  -0.364 x + -1.595 ( -20.0 deg), 133 inliers
+    wall 2: y =   2.745 x +  5.848 (  70.0 deg), 102 inliers
+    wall 3: y =  -0.363 x +  4.788 ( -20.0 deg), 74 inliers
+    wall 4: y =   2.743 x + -20.435 (  70.0 deg), 31 inliers

@@ -1,0 +1,598 @@
+% Lab 2 of Intelligent Robotics (ASY2): a polygon map of a room from one laser scan, by least squares and RANSAC.
+% Build: make  (latexmk -pdf). Figures are TikZ files in figures/, no external graphics.
+\documentclass[11pt,a4paper,parskip=half]{scrartcl}
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[sfdefault,lining]{FiraSans}
+\usepackage[scale=0.88]{FiraMono}
+\usepackage[a4paper,left=2.4cm,right=2.4cm,top=2.6cm,bottom=2.6cm,headsep=0.8cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,array,tabularx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc,shapes.geometric}
+\usepackage[skins,breakable]{tcolorbox}
+\usepackage{fontawesome5}
+\usepackage[font=small,labelfont={bf,color=ohmred},skip=4pt]{caption}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage[headsepline=0.4pt]{scrlayer-scrpage}
+\usepackage[colorlinks=true,linkcolor=ohmred,urlcolor=ohmred]{hyperref}
+\usepackage{cleveref}
+
+% ---------------------------------------------------------------- colours and headings
+\definecolor{ohmred}{HTML}{C8372D}
+\definecolor{ohmgreen}{HTML}{2E8B57}
+\definecolor{ohmamber}{HTML}{D98E04}
+\definecolor{ohmgrey}{HTML}{5A5A5A}
+\addtokomafont{disposition}{\color{ohmred}}
+\addtokomafont{section}{\Large}
+\addtokomafont{subsection}{\large}
+\setkomafont{pageheadfoot}{\small\color{ohmgrey}}
+\setkomafont{pagenumber}{\small\bfseries\color{ohmred}}
+\clearpairofpagestyles
+\ihead{Intelligent Robotics (ASY2) · Lab 2}
+\ohead{Polygon map}
+\ofoot{\pagemark}
+\pagestyle{scrheadings}
+
+\lstset{basicstyle=\ttfamily\small, columns=fullflexible, keepspaces=true,
+        showstringspaces=false, breaklines=true, frame=none, backgroundcolor=\color{black!5},
+        xleftmargin=8pt, xrightmargin=8pt, framexleftmargin=6pt, framexrightmargin=6pt,
+        aboveskip=4pt, belowskip=4pt}
+
+\newcommand{\thema}[1]{\texttt{#1}}
+\newcommand{\datei}[1]{\texttt{#1}}
+\newcommand{\minutes}[1]{\hfill{\normalsize\mdseries\color{ohmgrey}\faClock[regular]~#1 min}}
+
+% ---------------------------------------------------------------- boxes
+\tcbset{base/.style={enhanced, breakable, boxrule=0pt, arc=1.5pt, left=8pt, right=8pt,
+        top=5pt, bottom=5pt, before skip=8pt, after skip=8pt}}
+% \begin{todo}{1.3}: the block STUDENT 1.3, with its hint command at the end of the last line
+\newcommand{\hintcmd}[1]{\unskip\nobreak\hfil\penalty50\hskip1em\null\nobreak\hfil
+        \mbox{\small\color{ohmgrey}\faLightbulb[regular]~\texttt{python3 hint.py #1}}{\parfillskip=0pt\par}}
+\newtcolorbox{todo}[1]{base, colback=ohmred!5, borderline west={2.5pt}{0pt}{ohmred},
+        title={\faPen~STUDENT #1}, coltitle=ohmred, colbacktitle=ohmred!5, fonttitle=\bfseries,
+        attach title to upper={\quad}, after upper={\hintcmd{#1}}}
+\newtcolorbox{script}[1]{base, colback=black!3, borderline west={2.5pt}{0pt}{ohmgrey},
+        title={\faBook~Lecture script, #1}, coltitle=ohmgrey, colbacktitle=black!3,
+        fonttitle=\small\bfseries, toptitle=2pt, bottomtitle=0pt}
+\newtcolorbox{note}{base, colback=ohmamber!8, borderline west={2.5pt}{0pt}{ohmamber}}
+\newtcolorbox{checkpoint}{base, colback=ohmgreen!7, borderline west={2.5pt}{0pt}{ohmgreen},
+        title={\faCheckCircle[regular]~Checkpoint}, coltitle=ohmgreen, colbacktitle=ohmgreen!7,
+        fonttitle=\bfseries, attach title to upper={\quad}}
+
+% \running{<launch arguments>}{<node arguments>}: what terminals 1 and 2 run during a task
+\newcommand{\running}[2]{\begin{tcolorbox}[base, colback=black!3, borderline west={2.5pt}{0pt}{ohmgrey},
+        title={\faTerminal~Running}, coltitle=ohmgrey, colbacktitle=black!3, fonttitle=\small\bfseries,
+        toptitle=2pt, bottomtitle=0pt, fontupper=\small]
+  \begin{tabularx}{\linewidth}{@{}>{\color{ohmgrey}}l >{\raggedright\arraybackslash}X@{}}
+    terminal 1 & \texttt{ros2 launch ohm\_polygon\_map box.launch.py#1} \\
+    terminal 2 & \texttt{ros2 run ohm\_polygon\_map polygon\_map\_node.py -\kern0pt-ros-args #2}
+  \end{tabularx}
+\end{tcolorbox}}
+% \expected[<note>]{<name>}: RViz (figures/rviz_<name>.tikz) and terminal 2 (figures/term_<name>.txt)
+\newtcolorbox{seebox}{base, colback=ohmgreen!3, borderline west={2.5pt}{0pt}{ohmgreen!60},
+        title={\faEye[regular]~What you should see}, coltitle=ohmgreen!80!black, colbacktitle=ohmgreen!3,
+        fonttitle=\small\bfseries, toptitle=2pt, bottomtitle=0pt, breakable=false}
+\newcommand{\expected}[2][]{\begin{seebox}
+  \begin{minipage}[c]{0.36\linewidth}\resizebox{\linewidth}{!}{\input{figures/rviz_#2.tikz}}\end{minipage}%
+  \hfill
+  \begin{minipage}[c]{0.615\linewidth}
+    {\footnotesize\color{ohmgrey}#1terminal 2:}
+    \lstinputlisting[basicstyle=\ttfamily\scriptsize, aboveskip=2pt, belowskip=0pt, xleftmargin=4pt,
+                     framexleftmargin=3pt, breakindent=2em]{figures/term_#2.txt}
+  \end{minipage}
+\end{seebox}}
+
+\setlist[enumerate,1]{leftmargin=*,itemsep=3pt,topsep=2pt}
+\setlist[itemize,1]{leftmargin=*,itemsep=2pt,topsep=2pt}
+
+\begin{document}
+\sloppy
+
+% ---------------------------------------------------------------- title
+\begin{tcolorbox}[enhanced, colback=ohmred, colframe=ohmred, arc=0pt, left=14pt, right=14pt,
+                  top=12pt, bottom=12pt, fontupper=\color{white}]
+  {\small Intelligent Robotics (ASY2) · Lab 2}\\[6pt]
+  {\LARGE\bfseries Polygon map}\\[4pt]
+  {\large Least squares and RANSAC on a laser scan}
+\end{tcolorbox}
+
+\noindent
+\begin{tabular}{@{}>{\color{ohmgrey}}l l@{\hspace{2.4em}}>{\color{ohmgrey}}l l@{}}
+  \faClock[regular]~Duration & 180 minutes & \faUsers~Work in & pairs \\
+  \faBook~Script & Cycle 2, section 2.2.3 & \faFolderOpen[regular]~Files & \datei{ohm-polygon-map/student/}
+\end{tabular}
+
+\section{Overview}
+A robot stands in a room. We know two things about the room: it is a rectangle, and there is one round
+object in it. From a single laser scan you build a map of the room:
+\begin{itemize}
+  \item the four walls as straight lines,
+  \item the four corners as the intersections of these lines,
+  \item the round object as a circle.
+\end{itemize}
+One corner is hidden behind the object (\cref{fig:hall}). No beam reaches it, but your map will contain
+it anyway.
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/hall.tikz}
+  \caption{The hall \thema{box} from above. The laser looks along \(x\); all points, lines and circles
+    in this lab are in its frame.}
+  \label{fig:hall}
+\end{figure}
+
+\begin{table}[ht]\centering
+\caption{Schedule.}
+\label{tab:schedule}
+\begin{tabular}{@{}rll@{}}
+\toprule
+min & task & done when \\
+\midrule
+0--20 & \cref{sec:task0} The scan and its noise & \cref{tab:noise} is filled in \\
+20--60 & \cref{sec:task1} RANSAC: one line & a red line lies on a wall \\
+60--85 & \cref{sec:task2} Least squares & the refined line fits better \\
+85--95 & break & \\
+95--120 & \cref{sec:task3} Four lines & four walls in four colours \\
+120--140 & \cref{sec:task4} Corners & a red rectangle, \(9 \times 6\)\,m \\
+140--165 & \cref{sec:task5} The circle & a red circle on the object \\
+165--180 & \cref{sec:extra} Extra tasks & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Notation} as in the script: a point is \((\hat x_i, \hat y_i)\), a line is
+\(y = \tilde m\,x + \tilde t\), a circle has the centre \((\tilde x_0, \tilde y_0)\) and the radius
+\(\tilde r\). In the code: points \thema{(x, y)}, lines \thema{(m, t)}, circles \thema{(x0, y0, r)}, all
+in metres in the frame of the laser. The equations you need are repeated in the tasks, with the numbers
+they have in the script.
+
+\newpage
+\section{Getting started}
+\paragraph{Your own copy.} Fork \datei{ohm-polygon-map} on GitHub (button \emph{Fork} at the top right),
+then clone your fork into the \datei{src/} folder of your workspace. The simulator is still there from
+lab 1; update it:
+\begin{lstlisting}
+git clone git@github.com:<your-name>/ohm-polygon-map.git
+\end{lstlisting}
+\begin{lstlisting}
+git -C ir-mecanum-lab pull
+\end{lstlisting}
+Commit after every task and push, so nothing is lost at the end of the session.
+
+\paragraph{Build.} Build once, then source the workspace in every new terminal:
+\begin{lstlisting}
+colcon build --symlink-install --packages-select mecanum_lab_interfaces mecanum_lab ohm_polygon_map
+\end{lstlisting}
+\begin{lstlisting}
+source install/setup.bash
+\end{lstlisting}
+You do not need to build again after a change to your code. Just start the node again.
+
+\paragraph{Simulator.} One launch file starts the simulator in the hall \thema{box} and RViz. The robot
+stands still; the keys do not move it.
+\begin{lstlisting}
+ros2 launch ohm_polygon_map box.launch.py
+\end{lstlisting}
+
+\paragraph{Your files.} \datei{student/line\_fitting.py} (tasks 0 to 4) and
+\datei{student/circle\_fitting.py} (task 5), plain Python without ROS. In every function the checks
+(too few points, \thema{None}, parallel lines, \dots) are already there. You write only the few lines
+in the middle, marked
+\begin{lstlisting}
+# m = (y2 - y1) / (x2 - x1),   then t from  y1 = m x1 + t
+# TODO STUDENT 1.1
+raise NotImplementedError("STUDENT 1.1")
+\end{lstlisting}
+The comment above it says what to compute. Replace the \thema{raise} line by your code. Use only Python
+and \thema{math}, no \thema{numpy}. The helpers you call are given in
+\datei{ohm\_polygon\_map/geometry.py}, the drawing in RViz in \datei{ohm\_polygon\_map/rviz\_draw.py}.
+You do not change these files.
+
+\paragraph{The node.} \datei{student/polygon\_map\_node.py} is given. It subscribes to the scan, calls
+your functions and draws the result in RViz. The parameter \thema{stage} says how far it goes, from 0 (the
+noise) to 5 (the circle). It runs in a second terminal:
+\begin{lstlisting}
+ros2 run ohm_polygon_map polygon_map_node.py --ros-args -p stage:=1
+\end{lstlisting}
+Every 2\,s it takes the newest scan and prints what it found. If a function is not written yet, the node
+stops with \thema{NotImplementedError: STUDENT 1.1}: that is the next one to write.
+
+\paragraph{Self check.} The tests try your functions on made-up points, one stage at a time:
+\begin{lstlisting}
+python3 -m pytest test/test_fitting.py -q -k stage1
+\end{lstlisting}
+
+\paragraph{Three terminals.} All of them in the workspace, sourced.
+\begin{center}\small
+\begin{tabular}{@{}>{\color{ohmgrey}}l l l@{}}
+  terminal 1 & simulator and RViz & stays open the whole session \\
+  terminal 2 & your node           & Ctrl-C and start again after every change \\
+  terminal 3 & tests, hints, \thema{ros2 topic} & \\
+\end{tabular}
+\end{center}
+Every task starts with a box \emph{Running}: what terminals 1 and 2 run. It ends with \emph{What you
+should see}: RViz and terminal 2 when the task is done. RViz shows only the scan and what your node
+draws, not the walls of the hall. The numbers change a little from scan to scan.
+
+\paragraph{Hints.} Stuck? Every block has three hints: the idea, how to write it in Python, and at last
+the code. Each call opens the next one, in the folder \datei{ohm-polygon-map}:
+\begin{lstlisting}
+python3 hint.py 1.3
+\end{lstlisting}
+\thema{python3 hint.py} alone shows the hints you have opened. Try on your own first: the hints notice
+when you ask too early.
+
+\begin{figure}[!hb]
+  \centering
+  \resizebox{0.8\linewidth}{!}{\input{figures/pipeline.tikz}}
+  \caption{From the scan to the map. Red: you write it (the number is the task). Grey: given.}
+  \label{fig:pipeline}
+\end{figure}
+
+\clearpage
+\section{Task 0: the scan and its noise\minutes{20}}
+\label{sec:task0}
+\running{}{-p stage:=0}
+
+\begin{enumerate}
+  \item In terminal 3, look at one scan:
+\begin{lstlisting}
+ros2 topic echo /muster/scan --once
+\end{lstlisting}
+        Fill in the first rows of \cref{tab:noise}. How many beams are there? In which direction does
+        beam 0 point, in which beam 90?
+  \item Read \thema{scan\_to\_points} in \datei{geometry.py}. Which beams does it drop, and why?
+\end{enumerate}
+
+A wall that does not move should give the same range in every scan. It does not: the laser is noisy. You
+measure how noisy, because RANSAC needs a threshold \(\tau\) for ``close to the line''.
+
+\begin{script}{section 2.2.3, the one-dimensional case}
+The least-squares estimate of a constant from the readings \(\hat x_1 \dots \hat x_n\) is their mean:
+\begin{equation}
+  \tilde c = \frac 1n \sum_{i=1}^n \hat x_i .
+  \tag{2.18}
+\end{equation}
+\end{script}
+
+\begin{todo}{0.1}
+\datei{line\_fitting.py}, \thema{mean\_and\_std(values)}: the mean (2.18) and the sample standard
+deviation \(\sigma = \sqrt{\frac{1}{n-1}\sum_i (\hat x_i - \tilde c)^2}\).
+\end{todo}
+
+Run the node with \thema{stage:=0}. It collects beam 250 over 100 scans (5\,s), which hits the lower wall
+at a right angle (\cref{fig:hall}). It prints the mean, \(\sigma\) and \(\tau = 3\sigma\). Repeat with
+another beam, e.g. \thema{-p noise\_beam:=90}.
+
+\begin{table}[ht]\centering
+\renewcommand{\arraystretch}{1.8}
+\caption{The scan and its noise. Fill in.}
+\label{tab:noise}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{6.2cm}p{3.2cm}p{3.2cm}@{}}
+\toprule
+& beam 250 & beam 90 \\
+\midrule
+\thema{angle\_increment}, number of beams & \multicolumn{2}{l}{} \\
+\thema{range\_max}, a beam without echo & \multicolumn{2}{l}{} \\
+mean range \(\tilde c\) & & \\
+\(\sigma\) & & \\
+\(\tau = 3\sigma\) & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\expected[tick \thema{raw scan} in the list of displays of RViz; ]{stage0}
+
+\begin{checkpoint}
+\(\sigma\) is about the same for both beams. Why \(3\sigma\)? What share of the points on a wall lies
+closer than \(\tau\) to it?
+\end{checkpoint}
+
+\newpage
+\section{Task 1: RANSAC, one line\minutes{40}}
+\label{sec:task1}
+\running{}{-p stage:=1}
+
+A scan of the room has points on four walls and on the object. A least-squares line through all of them
+fits nothing. RANSAC turns the question around: draw two points, put a line through them, and count how
+many points agree with it.
+
+\begin{script}{section 2.2.3, robust fitting: RANSAC}
+Repeat \(k\) times: \emph{sample} the minimum number of points (two for a line), \emph{fit} the model,
+\emph{score} it by its inliers, the points closer than \(\tau\). \emph{Keep} the model with the most
+inliers. To draw at least one all-inlier sample with probability \(p\), with inlier ratio \(w\) and sample
+size \(s\):
+\begin{equation}
+  k = \frac{\log(1 - p)}{\log\left(1 - w^s\right)} .
+  \tag{2.30}
+\end{equation}
+\end{script}
+
+\begin{todo}{1.1}
+\thema{line\_through(p, q)}: the line \(y = m x + t\) through two points,
+\(m = (y_2 - y_1)/(x_2 - x_1)\), \(t = y_1 - m\,x_1\). Two points above each other are already caught.
+\end{todo}
+
+\begin{todo}{1.2}
+\thema{num\_iterations(w, s, p)} with (2.30), rounded up (\thema{math.ceil}). Check with the exercise of
+the script: \(w = 0.8\) gives 5, \(w = 0.5\) gives 17.
+\end{todo}
+
+\begin{note}
+Given in \datei{geometry.py}: \thema{line\_distance(point, line)} is the distance perpendicular to the line,
+\(d = |m x - y + t| / \sqrt{1 + m^2}\), and \thema{split\_line(points, line, tau)} returns
+\thema{(inliers, outliers)}. \thema{rng.sample(points, 2)} draws two different points.
+\end{note}
+
+\begin{todo}{1.3}
+\thema{ransac\_line(points, tau, iterations, rng)}: the loop already draws two points and puts a line
+through them (\emph{sample}, \emph{fit}). You write \emph{score} and \emph{keep}: the inliers of the line,
+and if there are more than for the best line so far, this line becomes the best line.
+\end{todo}
+
+Run the node with \thema{stage:=1}. RViz shows the scan in grey, the inliers and the line in red. The node
+uses \(w = 0.3\) and \(p = 0.99\).
+\begin{itemize}
+  \item Which wall does RANSAC find? Why that one?
+  \item Run it with \thema{-p seed:=2} up to \thema{seed:=5}. Does the result change?
+  \item Set \thema{-p w\_line:=0.9}. How many iterations is that? What happens?
+\end{itemize}
+
+\expected[]{stage1}
+
+\begin{checkpoint}
+\thema{pytest -k stage1} passes. In RViz the red line lies on a wall.
+\end{checkpoint}
+
+\newpage
+\section{Task 2: least squares\minutes{25}}
+\label{sec:task2}
+\running{}{-p stage:=2}
+
+The RANSAC line goes through two noisy points. All its inliers together say more: fit a line to them by
+least squares.
+
+\begin{script}{section 2.2.3, the two-dimensional case}
+The line \(y = \tilde m x + \tilde t\) that minimises the squared error in \(y\),
+\(\epsilon = \sum_i \big(\hat y_i - (\tilde m\,\hat x_i + \tilde t)\big)^2\), has
+\begin{equation}
+  \tilde m = \frac{\sum\limits_{i=1}^n (\hat x_i - \overline{\hat x})(\hat y_i - \overline{\hat y})}
+                  {\sum\limits_{i=1}^n (\hat x_i - \overline{\hat x})^2},
+  \tag{2.23}
+\end{equation}
+\begin{equation}
+  \tilde t = \overline{\hat y} - \tilde m\,\overline{\hat x} .
+  \tag{2.24}
+\end{equation}
+\end{script}
+
+\begin{todo}{2.1}
+\thema{fit\_line(points)}: \(\tilde m\) with (2.23) and \(\tilde t\) with (2.24). The means
+\(\overline{\hat x}\), \(\overline{\hat y}\) are already computed.
+\end{todo}
+
+\thema{pytest -k stage2} also tries the exercise of the script: the points \((0, 1.1)\), \((1, 2.9)\),
+\((2, 5.2)\), \((3, 6.8)\) give \(\tilde m = 1.94\) and \(\tilde t = 1.09\).
+
+The node fits your line to the inliers of the RANSAC line and then takes the inliers of the new line.
+Run it with \thema{stage:=2}: grey is the RANSAC line, red the least-squares line.
+\begin{itemize}
+  \item Compare \(m\) and \(t\) of both lines over a few evaluations. Which one changes less?
+  \item Has the number of inliers changed?
+\end{itemize}
+
+\expected[]{stage2}
+
+\begin{checkpoint}
+\thema{pytest -k stage2} passes. The least-squares line is steadier from scan to scan than the RANSAC line.
+\end{checkpoint}
+
+\newpage
+\section{Task 3: four lines\minutes{25}}
+\label{sec:task3}
+\running{}{-p stage:=3}
+
+Each wall is an outlier for the other three walls. So after one wall is found, its inliers are removed,
+and RANSAC runs again on the rest: \emph{sequential RANSAC}.
+
+\begin{todo}{3.1}
+\thema{find\_lines(points, n, tau, iterations, min\_inliers, rng)} repeats \(n\) times:
+\begin{enumerate}
+  \item \thema{ransac\_line} on the remaining points (given),
+  \item stop if it has fewer than \thema{min\_inliers} (given),
+  \item \thema{fit\_line} on its inliers,
+  \item \thema{split\_line} of the remaining points with this line: the inliers belong to the wall,
+        the outliers are the new remaining points,
+  \item append \thema{(line, inliers)} to \thema{lines}.
+\end{enumerate}
+You write steps 3 to 5, three lines.
+\end{todo}
+
+Run the node with \thema{stage:=3}. Each wall gets its own colour. Fill in \cref{tab:rounds}: \(N\) is the
+number of points at the start of the round (round 1: all points, the node prints them; then subtract the
+inliers of the round before), \(n\) the inliers of the line found, \(w = n/N\), and \(k\) the iterations
+(2.30) would ask for with this \(w\).
+
+\begin{table}[ht]\centering
+\renewcommand{\arraystretch}{1.8}
+\caption{Sequential RANSAC, round by round. Fill in.}
+\label{tab:rounds}
+\begin{tabular}{@{}cp{2.6cm}p{2.0cm}p{2.0cm}p{2.0cm}p{2.0cm}@{}}
+\toprule
+round & wall & \(N\) & \(n\) & \(w = n/N\) & \(k\) \\
+\midrule
+1 & & & & & \\
+2 & & & & & \\
+3 & & & & & \\
+4 & & & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{itemize}
+  \item The node uses \(k = 49\) (\(w = 0.3\)) in every round. Too many, too few?
+  \item Why does one wall have far fewer points than the others? (\cref{fig:hall})
+  \item What would happen without \thema{min\_inliers}, if you asked for five lines?
+\end{itemize}
+
+\expected[]{stage3}
+
+\begin{checkpoint}
+\thema{pytest -k stage3} passes. Four walls in four colours, about 20 points left over.
+\end{checkpoint}
+
+\newpage
+\section{Task 4: corners\minutes{20}}
+\label{sec:task4}
+\running{}{-p stage:=4}
+
+Two walls meet in a corner: where both line equations hold,
+\begin{equation}
+  m_1 x + t_1 = m_2 x + t_2
+  \quad\Rightarrow\quad
+  x = \frac{t_2 - t_1}{m_1 - m_2}, \qquad y = m_1 x + t_1 .
+  \label{eq:intersect}
+\end{equation}
+Four lines make six pairs. Two of them are opposite walls: parallel, no corner.
+
+\begin{todo}{4.1}
+\thema{intersect(l1, l2, min\_angle)}: \(x\) and \(y\) with \cref{eq:intersect}. Parallel lines (an
+angle below \thema{min\_angle}) are already caught.
+\end{todo}
+
+The given \thema{room\_corners(lines, intersect)} calls your \thema{intersect} on all pairs, drops the \thema{None}s and orders the corners
+around their centre, so that they form a polygon. Run the node with \thema{stage:=4}. RViz draws the room
+polygon in red with the length of each side; the node also prints the angles at the corners.
+
+\begin{table}[ht]\centering
+\renewcommand{\arraystretch}{1.8}
+\caption{The room. Fill in.}
+\label{tab:room}
+\begin{tabular}{@{}p{3.6cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}@{}}
+\toprule
+& side 1 & side 2 & side 3 & side 4 \\
+\midrule
+length in m & & & & \\
+angle at its first corner & & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{itemize}
+  \item Which corner was never measured? How far is it from the nearest scan point?
+  \item Why is \thema{min\_angle} needed, and not \thema{m1 == m2}?
+\end{itemize}
+
+\expected[]{stage4}
+
+\begin{checkpoint}
+\thema{pytest -k stage4} passes. The sides are \(9\) and \(6\,\mathrm{m}\) within a few centimetres, the
+angles \(90^\circ\) within a few tenths of a degree.
+\end{checkpoint}
+
+\newpage
+\section{Task 5: the circle\minutes{25}}
+\label{sec:task5}
+\running{}{-p stage:=5}
+
+After the four walls, about 20 points are left: the object. RANSAC works for a circle as it does for a
+line. Only three things change.
+
+\begin{script}{section 2.2.3, example: RANSAC for circles}
+\emph{Sample}: \(s = 3\) points; three points not on a line define one circle.
+\emph{Score}: point \(i\) is an inlier if
+\(\big|\sqrt{(\hat x_i - \tilde x_0)^2 + (\hat y_i - \tilde y_0)^2} - \tilde r\big| < \tau\).
+\emph{Refit}: the least-squares circle (2.37), (2.38) on all inliers. Applied to three points, the same
+formulas return the circle through them.
+\end{script}
+
+\begin{note}
+Given in \datei{geometry.py}: \thema{fit\_circle(points)} is (2.37) and (2.38); it returns \thema{None} for
+points on a line. Your file this time: \datei{student/circle\_fitting.py}.
+\end{note}
+
+\begin{todo}{5.1}
+\thema{circle\_distance(point, circle)}: the distance of the \emph{score} in the script box.
+\end{todo}
+
+\begin{todo}{5.2}
+\thema{ransac\_circle(points, tau, iterations, rng, r\_max)}: as in \thema{ransac\_line}, the loop already
+draws three points and fits the circle through them; circles larger than \thema{r\_max} are skipped
+(three points almost on a line give a huge circle). You write \emph{score} and \emph{keep}, with
+\thema{circle\_distance}. The refit on all inliers at the end is given.
+\end{todo}
+
+Run the node with \thema{stage:=5}. The node uses \(w = 0.5\), so \(k = 35\).
+\begin{itemize}
+  \item Centre and radius of the circle? Compare with \datei{config/box.json} (hall coordinates, so it
+        does not match directly: why?).
+  \item How many iterations would (2.30) need on the \emph{whole} scan, \(w = 20/360\), \(s = 3\)? What
+        does that say about the order of tasks 3 and 5?
+\end{itemize}
+
+\expected[]{stage5}
+
+\begin{checkpoint}
+\thema{pytest -k stage5} passes. A red circle lies on the object, the radius is \(0.8\,\mathrm{m}\) within a
+few centimetres.
+\end{checkpoint}
+
+\newpage
+\section{Extra tasks}
+\label{sec:extra}
+
+\subsection*{Z.1: a vertical wall}
+Stop the simulator and start it with the robot turned to \(0^\circ\):
+\running{ start:=straight}{-p stage:=4 \mbox{\textcolor{ohmgrey}{[-p hesse:=true]}}}
+Run the node with \thema{stage:=4}. What happens to the map? Look at \(m\) of the walls that run along
+\(y\). The script names the problem: \(y = m x + t\) measures the error only in \(y\), and it cannot
+describe a vertical line. Robots use the Hesse normal form \(x\cos\alpha + y\sin\alpha = r\) instead.
+
+\begin{script}{section 2.2.3, orthogonal least squares and the Hesse normal form}
+\begin{equation}
+  q_x = \sum_{i=1}^n (\hat x_i - \overline{\hat x})^2, \qquad
+  q_y = \sum_{i=1}^n (\hat y_i - \overline{\hat y})^2, \qquad
+  q_{xy} = \sum_{i=1}^n (\hat x_i - \overline{\hat x})(\hat y_i - \overline{\hat y}),
+  \tag{2.25}
+\end{equation}
+\begin{equation}
+  \alpha = \tfrac12 \operatorname{atan2}\!\left(-2\,q_{xy},\ q_y - q_x\right), \qquad
+  r = \overline{\hat x}\cos\alpha + \overline{\hat y}\sin\alpha .
+  \tag{2.29}
+\end{equation}
+If \(r\) comes out negative, add \(\pi\) to \(\alpha\) and flip the sign of \(r\).
+\end{script}
+
+\begin{todo}{Z.1}
+\thema{fit\_line\_hesse(points)} in \datei{line\_fitting.py}: \(q_x, q_y, q_{xy}\) with (2.25), then \(\alpha\)
+and \(r\) with (2.29). The means and the sign of \(r\) are already handled. Test with \thema{pytest -k extra}, then run the node
+with \thema{-p stage:=4 -p hesse:=true}: tasks 3 and 4 now use your function instead of \thema{fit\_line}.
+\end{todo}
+
+\begin{seebox}
+  \centering
+  \begin{minipage}[t]{0.4\linewidth}\centering
+    \resizebox{\linewidth}{!}{\input{figures/rviz_z1_ols.tikz}}\\[2pt]
+    {\small\thema{-p hesse:=false}, \(y = m x + t\)}
+  \end{minipage}\hspace{0.05\linewidth}
+  \begin{minipage}[t]{0.4\linewidth}\centering
+    \resizebox{\linewidth}{!}{\input{figures/rviz_z1_hesse.tikz}}\\[2pt]
+    {\small\thema{-p hesse:=true}, your \thema{fit\_line\_hesse}}
+  \end{minipage}
+  \par\smallskip{\footnotesize\color{ohmgrey}terminal 2:}
+  \lstinputlisting[basicstyle=\ttfamily\scriptsize, aboveskip=2pt, belowskip=0pt]{figures/term_z1.txt}
+\end{seebox}
+
+Why does RANSAC still find the vertical walls with \thema{line\_through}, which only gives \(m\) and \(t\)?
+
+\subsection*{Z.2: how exact is the circle?}
+The node evaluates a new scan every 2\,s. Note the radius of ten evaluations and compute its mean and
+\(\sigma\) with your \thema{mean\_and\_std}. Then compare with the circle seen from closer: how would you
+expect \(\sigma\) of the radius to change with the distance to the object, and why?
+
+\end{document}

@@ -1,0 +1,32 @@
+% TikZ figure: the hall `box` from above, in hall metres from the inner lower left corner.
+% Robot at (2.0, 1.5), heading 20 deg; circle at (6.0, 3.8), r = 0.8 (config/box.json minus the 0.5 m wall).
+% The shadow is bounded by the two tangents from the laser to the circle (19.9 and 39.9 deg).
+\begin{tikzpicture}[font=\small, scale=0.95]
+  \fill[black!55] (-0.5,-0.5) rectangle (9.5,6.5);
+  \fill[white] (0,0) rectangle (9,6);
+  \fill[black!7] (6.273,3.047) -- (9,4.033) -- (9,6) -- (7.380,6) -- (5.486,4.414) -- cycle;
+  \draw[black!40, dashed] (2,1.5) -- (9,4.033);
+  \draw[black!40, dashed] (2,1.5) -- (7.380,6);
+  \fill[black!55] (6,3.8) circle (0.8);
+  \node[white, align=center, font=\footnotesize] at (6,3.8) {round\\object};
+  \node[black!55, font=\footnotesize] at (8.1,5.2) {shadow};
+  % beam 250: straight down onto the lower wall
+  \draw[ohmamber, line width=0.9pt] (2,1.5) -- (2,0);
+  \node[ohmamber, font=\footnotesize, anchor=west] at (2.05,0.45) {beam 250};
+  % robot and laser frame
+  \draw[thick, fill=ohmred!15] (2,1.5) circle (0.23);
+  \draw[black!40] (2,1.5) -- (3.7,1.5);
+  \draw[black!60] (3.45,1.5) arc (0:20:1.45) node[pos=0.4, right, font=\footnotesize] {\(20^\circ\)};
+  \begin{scope}[shift={(2,1.5)}, rotate=20]
+    \draw[-{Stealth[length=2.2mm]}, thick, ohmred] (0,0) -- (1.0,0) node[above] {\(x\)};
+    \draw[-{Stealth[length=2.2mm]}, thick, ohmgreen] (0,0) -- (0,1.0) node[above] {\(y\)};
+  \end{scope}
+  \node[font=\footnotesize, anchor=east] at (1.72,1.35) {laser};
+  % corners
+  \foreach \c in {(0,0), (9,0), (0,6)} \fill[ohmred] \c circle (0.11);
+  \draw[ohmred, thick] (9,6) circle (0.17);
+  \node[ohmred, font=\footnotesize, anchor=north east] at (8.85,5.95) {hidden corner};
+  % dimensions
+  \draw[{Stealth[length=2mm]}-{Stealth[length=2mm]}] (0,-0.95) -- (9,-0.95) node[midway, below] {9\,m};
+  \draw[{Stealth[length=2mm]}-{Stealth[length=2mm]}] (9.95,0) -- (9.95,6) node[midway, right] {6\,m};
+\end{tikzpicture}

@@ -1,0 +1,1 @@
+[0] beam 250 over 100 scans: mean 1.4992 m, sigma 14.6 mm -> tau = 3 sigma = 43.8 mm

@@ -1,0 +1,17 @@
+{
+  "_comment": [
+    "LAB 'Polygon map', extra task Z.1: box.json with the robot at heading 0 (start:=straight).",
+    "Two walls are vertical in the laser frame: y = m x + t cannot describe them, the Hesse normal form can."
+  ],
+  "passthrough": false,
+  "gui_rate": 10,
+  "obstacles": {
+    "circles": [[6.5, 4.3, 0.8]]
+  },
+  "spawns": [[2.5, 2.0, 0.0]],
+  "view": {
+    "layers": {
+      "scan": true
+    }
+  }
+}

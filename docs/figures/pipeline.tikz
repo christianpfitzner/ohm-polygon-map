@@ -1,0 +1,51 @@
+% TikZ figure: from the scan to the map. Red boxes are the functions you write (task number in the
+% corner), grey boxes are given. One evaluation every 2 s; tau comes once from task 0.
+\begin{tikzpicture}[
+  font=\small,
+  data/.style={rectangle, rounded corners=2pt, draw=black!45, fill=black!3, minimum height=0.8cm,
+               minimum width=2.6cm, align=center, inner sep=3pt},
+  mine/.style={rectangle, draw=ohmred, line width=0.8pt, fill=ohmred!7, minimum height=0.8cm,
+               minimum width=3.0cm, align=center, inner sep=3pt},
+  given/.style={rectangle, draw=black!45, fill=white, minimum height=0.8cm, minimum width=3.0cm,
+                align=center, inner sep=3pt},
+  flow/.style={-{Stealth[length=2.2mm]}, line width=0.7pt, draw=black!70},
+  tag/.style={font=\scriptsize\bfseries, text=ohmred, anchor=north east, inner sep=1.5pt},
+]
+\node[data]  (scan)   at (0, 0)     {\texttt{/muster/scan}\\[-1pt]{\scriptsize LaserScan, 20\,Hz}};
+\node[given] (pts)    at (4.0, 0)   {\texttt{scan\_to\_points}};
+\node[data]  (points) at (8.0, 0)   {points \((x_i, y_i)\)};
+\node[mine]  (noise)  at (4.0, 1.6) {\texttt{mean\_and\_std}\\[-1pt]{\scriptsize one beam, 100 scans}};
+\node[data]  (tau)    at (8.0, 1.6) {\(\tau = 3\sigma\)};
+
+\node[mine, minimum width=7.6cm, minimum height=2.2cm] (find) at (8.0, -2.4) {};
+\node[font=\scriptsize\ttfamily, anchor=north west] at (find.north west) {find\_lines: 4 times};
+\node[mine, fill=white] (ransac) at (6.1, -2.55) {\texttt{ransac\_line}\\[-1pt]{\scriptsize\texttt{line\_through}, \texttt{num\_iterations}}};
+\node[mine, fill=white, minimum width=2.4cm] (ols) at (10.3, -2.55) {\texttt{fit\_line}\\[-1pt]{\scriptsize on the inliers}};
+
+\node[mine]  (cut)    at (6.0, -5.0) {\texttt{intersect}\\[-1pt]{\scriptsize in \texttt{room\_corners}}};
+\node[data]  (room)   at (6.0, -6.6) {4 corners, the room polygon};
+\node[mine]  (circ)   at (11.0, -5.0) {\texttt{ransac\_circle}\\[-1pt]{\scriptsize \texttt{circle\_distance}}};
+\node[data]  (circle) at (11.0, -6.6) {circle \((x_0, y_0, r)\)};
+\node[data, minimum width=7.0cm] (rviz) at (8.5, -8.0) {RViz: \texttt{/muster/polygon\_map/...}};
+
+\node[tag] at (noise.north east) {0};
+\node[tag] at (ransac.north east) {1};
+\node[tag] at (ols.north east) {2};
+\node[tag] at (find.north east) {3};
+\node[tag] at (cut.north east) {4};
+\node[tag] at (circ.north east) {5};
+
+\draw[flow] (scan) -- (pts);
+\draw[flow] (pts) -- (points);
+\draw[flow] (scan.north) |- (noise.west);
+\draw[flow] (noise) -- (tau);
+\draw[flow] (points) -- (find.north -| points);
+\draw[flow] (tau.east) -- ++(4.4,0) |- (find.east);
+\draw[flow] (ransac) -- (ols);
+\draw[flow] (find.south -| cut) -- node[left, font=\scriptsize] {4 lines} (cut);
+\draw[flow] (find.south -| circ) -- node[right, font=\scriptsize] {points no line explains} (circ);
+\draw[flow] (cut) -- (room);
+\draw[flow] (circ) -- (circle);
+\draw[flow] (room.south) -- (room.south |- rviz.north);
+\draw[flow] (circle.south) -- (circle.south |- rviz.north);
+\end{tikzpicture}

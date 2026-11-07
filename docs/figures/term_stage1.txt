@@ -1,0 +1,1 @@
+[1] 360 points, k = 49: RANSAC line y =  -0.364 x + -1.587 ( -20.0 deg), 133 inliers
