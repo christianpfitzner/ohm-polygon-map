@@ -184,11 +184,12 @@ ros2 launch ohm_polygon_map box.launch.py
 (too few points, \thema{None}, parallel lines, \dots) are already there. You write only the few lines
 in the middle, marked
 \begin{lstlisting}
-# m = (y2 - y1) / (x2 - x1),   then t from  y1 = m x1 + t
+# the slope from the two points, then the offset from one point that lies on the line
 # TODO STUDENT 1.1
 raise NotImplementedError("STUDENT 1.1")
 \end{lstlisting}
-The comment above it says what to compute. Replace the \thema{raise} line by your code. Use only Python
+The comment above it says in words what goes there; the equation is in the task of this handout, and
+the \thema{return} below shows the names to use. Replace the \thema{raise} line by your code. Use only Python
 and \thema{math}, no \thema{numpy}. The helpers you call are given in
 \datei{ohm\_polygon\_map/geometry.py}, the drawing in RViz in \datei{ohm\_polygon\_map/rviz\_draw.py}.
 You do not change these files.

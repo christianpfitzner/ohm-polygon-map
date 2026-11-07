@@ -3,7 +3,9 @@
     point   (x, y)        metres, in the frame of the laser
     circle  (x0, y0, r)   centre and radius
 
-Write the lines between `# >>> STUDENT` and `# <<< STUDENT`. The checks around them are already there.
+Replace each `raise NotImplementedError("STUDENT ...")` by your code: the comment above it says in words
+what goes there, the task in the handout gives the equation, and the `return` below shows the names to
+use. The checks around it are already there.
 fit_circle (script eq. 2.37, 2.38) is in ohm_polygon_map/geometry.py. Plain Python and math, no numpy.
 """
 import math
@@ -15,7 +17,8 @@ def circle_distance(point, circle):
     """Distance of a point to the circle line."""
     x, y = point
     x0, y0, r = circle
-    # | sqrt((x - x0)^2 + (y - y0)^2) - r |      (script, RANSAC for circles: score)
+    # how far the point is off the circle line: its distance to the centre against the radius,
+    # inside counts the same as outside
     # TODO STUDENT 5.1
     raise NotImplementedError("STUDENT 5.1")
     return d
@@ -30,9 +33,8 @@ def ransac_circle(points, tau, iterations, rng, r_max):
         circle = fit_circle(rng.sample(points, 3))      # the circle through three random points
         if circle is None or circle[2] > r_max:         # points on a line, or too big to be the object
             continue
-        # inliers: the points with circle_distance(point, circle) < tau
-        # more inliers than the best circle so far?  then this circle is the new best circle
-        # (the same as in ransac_line)
+        # score: the points close enough to this circle (no helper here, but task 5.1 gives the distance)
+        # keep: as in ransac_line, the circle most points agree with is the new best circle
         # TODO STUDENT 5.2
         raise NotImplementedError("STUDENT 5.2")
     # least squares on all inliers of the best circle, as fit_line did for the walls
