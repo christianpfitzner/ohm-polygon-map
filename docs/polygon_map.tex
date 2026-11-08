@@ -115,8 +115,8 @@ object in it. From a single laser scan you build a map of the room:
   \item the four corners as the intersections of these lines,
   \item the round object as a circle.
 \end{itemize}
-One corner is hidden behind the object (\cref{fig:hall}). No beam reaches it, but your map will contain
-it anyway.
+One corner lies behind the object (\cref{fig:hall}), and no beam reaches it. The map still contains
+it.
 
 \begin{figure}[ht]
   \centering
@@ -153,16 +153,17 @@ they have in the script.
 
 \newpage
 \section{Getting started}
-\paragraph{Your own copy.} Fork \datei{ohm-polygon-map} on GitHub (button \emph{Fork} at the top right),
-then clone your fork into the \datei{src/} folder of your workspace. The simulator is still there from
-lab 1; update it:
+\paragraph{Your own copy.} Clone \datei{ohm-polygon-map} into the \datei{src/} folder of your workspace:
 \begin{lstlisting}
-git clone git@github.com:<your-name>/ohm-polygon-map.git
+git clone https://github.com/christianpfitzner/ohm-polygon-map.git
 \end{lstlisting}
+Optional: fork it on GitHub first (button \emph{Fork} at the top right) and clone your fork instead,
+\thema{git@github.com:<your-name>/ohm-polygon-map.git}. Then you can commit after every task and push,
+so nothing is lost at the end of the session.
+The simulator is still there from lab 1; update it:
 \begin{lstlisting}
 git -C ir-mecanum-lab pull
 \end{lstlisting}
-Commit after every task and push, so nothing is lost at the end of the session.
 
 \paragraph{Build.} Build once, then source the workspace in every new terminal:
 \begin{lstlisting}
@@ -171,7 +172,7 @@ colcon build --symlink-install --packages-select mecanum_lab_interfaces mecanum_
 \begin{lstlisting}
 source install/setup.bash
 \end{lstlisting}
-You do not need to build again after a change to your code. Just start the node again.
+After a change to your code, start the node again. There is no need to build again.
 
 \paragraph{Simulator.} One launch file starts the simulator in the hall \thema{box} and RViz. The robot
 stands still; the keys do not move it.
@@ -201,7 +202,7 @@ noise) to 5 (the circle). It runs in a second terminal:
 ros2 run ohm_polygon_map polygon_map_node.py --ros-args -p stage:=1
 \end{lstlisting}
 Every 2\,s it takes the newest scan and prints what it found. If a function is not written yet, the node
-stops with \thema{NotImplementedError: STUDENT 1.1}: that is the next one to write.
+stops with \thema{NotImplementedError: STUDENT 1.1}. That block is the next one to write.
 
 \paragraph{Self check.} The tests try your functions on made-up points, one stage at a time:
 \begin{lstlisting}
@@ -220,13 +221,12 @@ Every task starts with a box \emph{Running}: what terminals 1 and 2 run. It ends
 should see}: RViz and terminal 2 when the task is done. RViz shows only the scan and what your node
 draws, not the walls of the hall. The numbers change a little from scan to scan.
 
-\paragraph{Hints.} Stuck? Every block has three hints: the idea, how to write it in Python, and at last
-the code. Each call opens the next one, in the folder \datei{ohm-polygon-map}:
+\paragraph{Hints.} Every block has three hints: the idea, how to write it in Python, and the code. Each call opens the next one, in the folder \datei{ohm-polygon-map}:
 \begin{lstlisting}
 python3 hint.py 1.3
 \end{lstlisting}
-\thema{python3 hint.py} alone shows the hints you have opened. Try on your own first: the hints notice
-when you ask too early.
+\thema{python3 hint.py} alone shows the hints you have opened. A new hint opens only after you have
+tried the block yourself, and not within 5 minutes of the one before.
 
 \begin{figure}[!hb]
   \centering
@@ -250,8 +250,8 @@ ros2 topic echo /muster/scan --once
   \item Read \thema{scan\_to\_points} in \datei{geometry.py}. Which beams does it drop, and why?
 \end{enumerate}
 
-A wall that does not move should give the same range in every scan. It does not: the laser is noisy. You
-measure how noisy, because RANSAC needs a threshold \(\tau\) for ``close to the line''.
+The range to a wall changes from scan to scan, because the laser is noisy. RANSAC needs a threshold
+\(\tau\) for ``close to the line'', so you measure the noise first.
 
 \begin{script}{section 2.2.3, the one-dimensional case}
 The least-squares estimate of a constant from the readings \(\hat x_1 \dots \hat x_n\) is their mean:
@@ -300,8 +300,8 @@ closer than \(\tau\) to it?
 \running{}{-p stage:=1}
 
 A scan of the room has points on four walls and on the object. A least-squares line through all of them
-fits nothing. RANSAC turns the question around: draw two points, put a line through them, and count how
-many points agree with it.
+fits none of the walls. RANSAC instead draws two points, puts a line through them and counts how many
+points agree with it.
 
 \begin{script}{section 2.2.3, robust fitting: RANSAC}
 Repeat \(k\) times: \emph{sample} the minimum number of points (two for a line), \emph{fit} the model,
@@ -357,8 +357,8 @@ uses \(w = 0.3\) and \(p = 0.99\).
 \label{sec:task2}
 \running{}{-p stage:=2}
 
-The RANSAC line goes through two noisy points. All its inliers together say more: fit a line to them by
-least squares.
+The RANSAC line goes through two noisy points. A least-squares line through all its inliers is more
+exact.
 
 \begin{script}{section 2.2.3, the two-dimensional case}
 The line \(y = \tilde m x + \tilde t\) that minimises the squared error in \(y\),
@@ -400,8 +400,8 @@ Run it with \thema{stage:=2}: grey is the RANSAC line, red the least-squares lin
 \label{sec:task3}
 \running{}{-p stage:=3}
 
-Each wall is an outlier for the other three walls. So after one wall is found, its inliers are removed,
-and RANSAC runs again on the rest: \emph{sequential RANSAC}.
+For one wall, the points of the other three walls are outliers. \emph{Sequential RANSAC} therefore
+removes the inliers of each wall it finds and runs again on the remaining points.
 
 \begin{todo}{3.1}
 \thema{find\_lines(points, n, tau, iterations, min\_inliers, rng)} repeats \(n\) times:
@@ -461,7 +461,8 @@ Two walls meet in a corner: where both line equations hold,
   x = \frac{t_2 - t_1}{m_1 - m_2}, \qquad y = m_1 x + t_1 .
   \label{eq:intersect}
 \end{equation}
-Four lines make six pairs. Two of them are opposite walls: parallel, no corner.
+Four lines make six pairs. Two of these pairs are opposite walls, which are parallel and have no
+corner.
 
 \begin{todo}{4.1}
 \thema{intersect(l1, l2, min\_angle)}: \(x\) and \(y\) with \cref{eq:intersect}. Parallel lines (an
@@ -503,8 +504,8 @@ angles \(90^\circ\) within a few tenths of a degree.
 \label{sec:task5}
 \running{}{-p stage:=5}
 
-After the four walls, about 20 points are left: the object. RANSAC works for a circle as it does for a
-line. Only three things change, and this time you write the fit as well.
+After the four walls, about 20 points are left. They lie on the object. RANSAC for a circle works as
+for a line, with three changes. This time you also write the least-squares fit.
 
 \begin{script}{section 2.2.3, example: RANSAC for circles}
 \emph{Sample}: \(s = 3\) points; three points not on a line define one circle.
@@ -538,7 +539,7 @@ b_1 = a_2 &= 2\left(S_x S_y - n S_{xy}\right),
              + S_{yy} - 2\tilde y_0 S_y + n\tilde y_0^2\right)} .
   \tag{2.38}
 \end{equation}
-For points on a line \(a_1 b_2 - a_2 b_1 = 0\): there is no circle.
+For points on a line, \(a_1 b_2 - a_2 b_1 = 0\) and there is no circle.
 \end{script}
 
 \begin{note}
@@ -568,8 +569,8 @@ draws three points and fits the circle through them; circles larger than \thema{
 
 Run the node with \thema{stage:=5}. The node uses \(w = 0.5\), so \(k = 35\).
 \begin{itemize}
-  \item Centre and radius of the circle? Compare with \datei{config/box.json} (hall coordinates, so it
-        does not match directly: why?).
+  \item Centre and radius of the circle? Compare with \datei{config/box.json}. The file uses hall
+        coordinates. Why do the numbers not match directly?
   \item How many iterations would (2.30) need on the \emph{whole} scan, \(w = 20/360\), \(s = 3\)? What
         does that say about the order of tasks 3 and 5?
 \end{itemize}
@@ -589,8 +590,8 @@ few centimetres.
 Stop the simulator and start it with the robot turned to \(0^\circ\):
 \running{ start:=straight}{-p stage:=4 \mbox{\textcolor{ohmgrey}{[-p hesse:=true]}}}
 Run the node with \thema{stage:=4}. What happens to the map? Look at \(m\) of the walls that run along
-\(y\). The script names the problem: \(y = m x + t\) measures the error only in \(y\), and it cannot
-describe a vertical line. Robots use the Hesse normal form \(x\cos\alpha + y\sin\alpha = r\) instead.
+\(y\). The form \(y = m x + t\) measures the error only in \(y\) and cannot describe a vertical line. The
+Hesse normal form \(x\cos\alpha + y\sin\alpha = r\) has neither problem.
 
 \begin{script}{section 2.2.3, orthogonal least squares and the Hesse normal form}
 \begin{equation}
