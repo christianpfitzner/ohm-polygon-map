@@ -181,6 +181,20 @@ def test_stage4_room_corners_are_four_and_in_order():
 # ----------------------------------------------------------------------------- stage 5
 
 
+def test_stage5_circle_through_three_points_as_in_the_lecture_exercise():
+    assert C.fit_circle([(0.0, 0.0), (2.0, 0.0), (0.0, 2.0)]) == pytest.approx((1.0, 1.0, math.sqrt(2.0)))
+
+
+def test_stage5_no_circle_through_points_on_a_line():
+    assert C.fit_circle([(0.0, 0.0), (1.0, 1.0), (2.0, 2.0)]) is None
+    assert C.fit_circle([(0.0, 0.0), (1.0, 1.0)]) is None
+
+
+def test_stage5_least_squares_circle_on_a_noisy_arc():
+    arc = on_circle(4.0, 1.0, 0.8, [math.radians(a) for a in range(120, 240, 5)], noise=0.005, seed=2)
+    assert C.fit_circle(arc) == pytest.approx((4.0, 1.0, 0.8), abs=0.02)
+
+
 def test_stage5_circle_distance():
     assert C.circle_distance((3.0, 0.0), (0.0, 0.0, 1.0)) == pytest.approx(2.0)
     assert C.circle_distance((0.0, 0.5), (0.0, 0.0, 1.0)) == pytest.approx(0.5)
@@ -202,9 +216,6 @@ def test_stage5_huge_circles_are_not_objects():
     assert circle is None or circle[2] <= 2.0
 
 
-def test_stage5_given_circle_through_three_points_as_in_the_lecture_exercise():
-    assert G.fit_circle([(0.0, 0.0), (2.0, 0.0), (0.0, 2.0)]) == pytest.approx((1.0, 1.0, math.sqrt(2.0)))
-    assert G.fit_circle([(0.0, 0.0), (1.0, 1.0), (2.0, 2.0)]) is None
 
 
 # ----------------------------------------------------------------------------- extra task Z.1

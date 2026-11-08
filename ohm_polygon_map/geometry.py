@@ -80,41 +80,6 @@ def polygon_angles(corners):
     return angles
 
 
-# ----------------------------------------------------------------------------- circle
-
-
-def fit_circle(points):
-    """Least-squares circle (script eq. 2.37, 2.38), None for < 3 points or points on a straight line.
-
-    Through three points it is the circle through them, so RANSAC uses it for its samples too.
-    """
-    n = len(points)
-    if n < 3:
-        return None
-    sx = sum(x for x, _ in points)
-    sy = sum(y for _, y in points)
-    sxx = sum(x * x for x, _ in points)
-    syy = sum(y * y for _, y in points)
-    sxy = sum(x * y for x, y in points)
-    sxxx = sum(x ** 3 for x, _ in points)
-    syyy = sum(y ** 3 for _, y in points)
-    sxyy = sum(x * y * y for x, y in points)
-    sxxy = sum(x * x * y for x, y in points)
-    a1 = 2.0 * (sx * sx - n * sxx)
-    b1 = a2 = 2.0 * (sx * sy - n * sxy)
-    b2 = 2.0 * (sy * sy - n * syy)
-    c1 = sx * (sxx + syy) - n * (sxxx + sxyy)
-    c2 = sy * (sxx + syy) - n * (sxxy + syyy)
-    det = a1 * b2 - a2 * b1
-    if abs(det) <= 1e-12 * max(1.0, abs(a1 * b2)):
-        return None
-    x0 = (c1 * b2 - c2 * b1) / det
-    y0 = (a1 * c2 - a2 * c1) / det
-    r2 = (sxx - 2.0 * x0 * sx + n * x0 * x0 + syy - 2.0 * y0 * sy + n * y0 * y0) / n
-    return x0, y0, math.sqrt(max(r2, 0.0))
-
-
-
 # ----------------------------------------------------------------------------- extra task: Hesse normal form
 
 

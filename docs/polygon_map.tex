@@ -139,8 +139,8 @@ min & task & done when \\
 85--95 & break & \\
 95--120 & \cref{sec:task3} Four lines & four walls in four colours \\
 120--140 & \cref{sec:task4} Corners & a red rectangle, \(9 \times 6\)\,m \\
-140--165 & \cref{sec:task5} The circle & a red circle on the object \\
-165--180 & \cref{sec:extra} Extra tasks & \\
+140--175 & \cref{sec:task5} The circle & a red circle on the object \\
+175--180 & \cref{sec:extra} Extra tasks & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -334,6 +334,8 @@ Given in \datei{geometry.py}: \thema{line\_distance(point, line)} is the distanc
 \thema{ransac\_line(points, tau, iterations, rng)}: the loop already draws two points and puts a line
 through them (\emph{sample}, \emph{fit}). You write \emph{score} and \emph{keep}: the inliers of the line,
 and if there are more than for the best line so far, this line becomes the best line.
+\thema{split\_line} returns a pair: unpack it, \thema{inliers, outliers = split\_line(\dots)}. Taken as one
+value, \thema{len(inliers)} is always 2, and RViz cannot draw the points.
 \end{todo}
 
 Run the node with \thema{stage:=1}. RViz shows the scan in grey, the inliers and the line in red. The node
@@ -497,12 +499,12 @@ angles \(90^\circ\) within a few tenths of a degree.
 \end{checkpoint}
 
 \newpage
-\section{Task 5: the circle\minutes{25}}
+\section{Task 5: the circle\minutes{35}}
 \label{sec:task5}
 \running{}{-p stage:=5}
 
 After the four walls, about 20 points are left: the object. RANSAC works for a circle as it does for a
-line. Only three things change.
+line. Only three things change, and this time you write the fit as well.
 
 \begin{script}{section 2.2.3, example: RANSAC for circles}
 \emph{Sample}: \(s = 3\) points; three points not on a line define one circle.
@@ -512,16 +514,52 @@ line. Only three things change.
 formulas return the circle through them.
 \end{script}
 
+\begin{script}{section 2.2.3, the least-squares circle}
+The circle that minimises \(\epsilon = \sum_i E_i^2\) with
+\(E_i = (\hat x_i - \tilde x_0)^2 + (\hat y_i - \tilde y_0)^2 - \tilde r^2\) needs no iteration. With the
+sums \(S_x = \sum \hat x_i\), \(S_{xx} = \sum \hat x_i^2\), \(S_{xy} = \sum \hat x_i \hat y_i\),
+\(S_{xyy} = \sum \hat x_i \hat y_i^2\) and so on, the centre solves a linear system:
+\begin{equation}
+  a_1 \tilde x_0 + b_1 \tilde y_0 = c_1, \qquad a_2 \tilde x_0 + b_2 \tilde y_0 = c_2,
+  \tag{2.36}
+\end{equation}
+\begin{align*}
+a_1 &= 2\left(S_x^2 - n S_{xx}\right), & c_1 &= S_x \left(S_{xx} + S_{yy}\right) - n \left(S_{xxx} + S_{xyy}\right),\\
+b_2 &= 2\left(S_y^2 - n S_{yy}\right), & c_2 &= S_y \left(S_{xx} + S_{yy}\right) - n \left(S_{xxy} + S_{yyy}\right),\\
+b_1 = a_2 &= 2\left(S_x S_y - n S_{xy}\right),
+\end{align*}
+\begin{equation}
+  \begin{pmatrix} \tilde x_0 \\ \tilde y_0 \end{pmatrix}
+  = \frac{1}{a_1 b_2 - a_2 b_1} \begin{pmatrix} c_1 b_2 - c_2 b_1 \\ a_1 c_2 - a_2 c_1 \end{pmatrix},
+  \tag{2.37}
+\end{equation}
+\begin{equation}
+  \tilde r = \sqrt{\tfrac{1}{n}\left(S_{xx} - 2\tilde x_0 S_x + n\tilde x_0^2
+             + S_{yy} - 2\tilde y_0 S_y + n\tilde y_0^2\right)} .
+  \tag{2.38}
+\end{equation}
+For points on a line \(a_1 b_2 - a_2 b_1 = 0\): there is no circle.
+\end{script}
+
 \begin{note}
-Given in \datei{geometry.py}: \thema{fit\_circle(points)} is (2.37) and (2.38); it returns \thema{None} for
-points on a line. Your file this time: \datei{student/circle\_fitting.py}.
+Your file this time: \datei{student/circle\_fitting.py}. In \thema{fit\_circle} the nine sums are already
+computed, and so is the check for points on a line.
 \end{note}
 
 \begin{todo}{5.1}
-\thema{circle\_distance(point, circle)}: the distance of the \emph{score} in the script box.
+\thema{fit\_circle(points)}: the six coefficients \(a_1, b_1, a_2, b_2, c_1, c_2\) of (2.36).
 \end{todo}
 
 \begin{todo}{5.2}
+\thema{fit\_circle(points)}: the centre with (2.37) and the radius with (2.38). Check with the exercise of
+the script: \((0, 0)\), \((2, 0)\), \((0, 2)\) give the centre \((1, 1)\) and \(\tilde r = \sqrt 2\).
+\end{todo}
+
+\begin{todo}{5.3}
+\thema{circle\_distance(point, circle)}: the distance of the \emph{score} in the first script box.
+\end{todo}
+
+\begin{todo}{5.4}
 \thema{ransac\_circle(points, tau, iterations, rng, r\_max)}: as in \thema{ransac\_line}, the loop already
 draws three points and fits the circle through them; circles larger than \thema{r\_max} are skipped
 (three points almost on a line give a huge circle). You write \emph{score} and \emph{keep}, with

@@ -59,7 +59,8 @@ def ransac_line(points, tau, iterations, rng):
         line = line_through(p, q)
         if line is None:
             continue
-        # score: which points lie close to this line (a helper in geometry.py sorts them)
+        # score: which points lie close to this line; split_line in geometry.py sorts them and returns
+        #        a pair (inliers, outliers), so unpack it
         # keep: if more points agree with this line than with the best one so far, it is the new best
         # TODO STUDENT 1.3
         raise NotImplementedError("STUDENT 1.3")

@@ -111,7 +111,7 @@ def test_straight_start_breaks_y_equals_mx_plus_t_and_not_hesse():
 @pytest.mark.parametrize("name, blocks, call, raised", [
     ("line_fitting", ["0.1", "1.1", "1.2", "1.3", "2.1", "3.1", "4.1", "Z.1"],
      lambda m: m.line_through((0, 0), (1, 1)), "1.1"),
-    ("circle_fitting", ["5.1", "5.2"], lambda m: m.circle_distance((0, 0), (1, 1, 1)), "5.1"),
+    ("circle_fitting", ["5.1", "5.2", "5.3", "5.4"], lambda m: m.fit_circle([(0, 0), (2, 0), (0, 2)]), "5.1"),
 ])
 def test_the_student_markers_are_balanced_and_the_template_raises(tmp_path, name, blocks, call, raised):
     if not os.path.exists(os.path.join(ROOT, "tools", "make_template.py")):
